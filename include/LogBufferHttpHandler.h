@@ -7,7 +7,7 @@
 
 static esp_err_t post_logBuffer_handler(httpd_req_t *req)
 {
-  httpd_resp_set_hdr(req, AccessControlAllowOrigin, "*");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
   httpd_resp_set_type(req, "application/json");
 
   uint16_t lastId = 0;
@@ -48,7 +48,9 @@ static esp_err_t post_logBuffer_handler(httpd_req_t *req)
       httpd_resp_sendstr_chunk(req, "|");
     }
 
-    httpd_resp_sendstr_chunk(req, line->GetLogString());
+    char *remStr = RemovingString(line->GetData());
+    httpd_resp_sendstr_chunk(req, remStr);
+    free(remStr);
 
     delete line;
     line = nextLine;
@@ -72,18 +74,9 @@ static const httpd_uri_t http_server_post_logBuffer_request = {
     .method = HTTP_POST,
     .handler = post_logBuffer_handler};
 
-static const httpd_uri_t http_server_options_logBuffer_request = {
-    .uri = apilog,
-    .method = HTTP_OPTIONS,
-    .handler = options_handler};
-
 #pragma GCC diagnostic pop
 
 static esp_err_t register_logBuffer_handler(httpd_handle_t handle)
 {
-  esp_err_t err = httpd_register_uri_handler(handle, &http_server_post_logBuffer_request);
-  if (err != ESP_OK)
-    return err;
-  err = httpd_register_uri_handler(handle, &http_server_options_logBuffer_request);
-  return err;
+  return httpd_register_uri_handler(handle, &http_server_post_logBuffer_request);
 }
